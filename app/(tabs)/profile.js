@@ -1,11 +1,22 @@
 import { View, Text, Image, Pressable, StyleSheet } from "react-native";
-import React from "react";
+import React, { useEffect } from "react";
 import { FontAwesome } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
 import { Itim_400Regular, Inter_400Regular } from "@expo-google-fonts/dev";
 import { useNavigation } from "expo-router";
+import { auth } from "../../firebaseConfig";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function Profile() {
+
+  const [user, setUser] = useState();
+  const [imageUrl, setImageUrl] = useState();
+
+  const getUser = () => {
+    onAuthStateChanged(auth, (user) => {
+      setUser(user);
+    })
+  }
   
   let [fontsLoaded] = useFonts({
     Itim_400Regular,
@@ -13,6 +24,9 @@ export default function Profile() {
   });
 
   const navigation = useNavigation();
+  useEffect(() => {
+    getUser();
+  },[])
 
   return (
     <View style={styles.topContainer}>
