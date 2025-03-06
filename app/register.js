@@ -14,7 +14,7 @@ import * as ImagePicker from "expo-image-picker";
 
 // import firebase from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { getStorage, ref, uploadBytes } from "firebase/storage";
+import { ref, uploadBytes } from "firebase/storage";
 import { app, auth, firestore, storage, firebase } from "../firebaseConfig.js";
 import { doc, setDoc } from "firebase/firestore";
 // import "firebase/firestore";
@@ -54,8 +54,10 @@ export default function Register() {
   const uploadImage = async (uri, userId) => {
     const response = await fetch(uri);
     const blob = await response.blob();
-    const ref = firebase.storage.ref.child(`profile_images/${userId}`);
-    await ref.put(blob);
+    const storageRef = ref(storage, `profile_images/${userId}`)
+    // const ref = firebase.storage.ref.child(`profile_images/${userId}`);
+    await uploadBytes(storageRef, blob)
+    // await ref.put(blob);
     return ref.getDownloadURL();
   };
 
@@ -97,7 +99,7 @@ export default function Register() {
         genderIdentity: genderIdentity,
         sexualOrientation: sexualOrientation,
         location: location,
-        // profilePhotoUrl: downloadUrl,
+        profilePhotoUrl: `profile_images/${user.uid}`,
         // createdAt: firestore.FieldValue.serverTimestamp(),
       });
       setLoading(false);
