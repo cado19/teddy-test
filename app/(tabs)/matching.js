@@ -24,7 +24,7 @@ import firebaseApp from "../firebaseConfig";
 export default function Matching() {
   const navigation = useNavigation();
   const auth = getAuth(firebaseApp);
-  const firestore = getFirestore(firebaseApp);
+  const firestore = getFirestore(firebaseApp);s
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [potentialMatches, setPotentialMatches] = useState([]);

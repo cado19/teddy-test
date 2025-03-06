@@ -74,6 +74,12 @@ export default function Publish() {
     }
   };
 
+  // Helper to remove selected media
+  const removeMedia = () => {
+    setImageUri(null);
+    setVideoUri(null);
+  };
+
   const handlePublish = async () => {
     const user = auth.currentUser;
     if (!user) {
@@ -167,6 +173,9 @@ export default function Publish() {
           <Pressable style={styles.pickButton} onPress={pickVideo}>
             <Text style={styles.pickButtonText}>UPLOAD VIDEO</Text>
           </Pressable>
+          <Pressable style={styles.removeButton} onPress={removeMedia}>
+            <Text style={styles.pickButtonText}>REMOVE MEDIA</Text>
+          </Pressable>
         </View>
         <Pressable style={styles.publishButton} onPress={handlePublish}>
           <Text style={styles.pickButtonText}>PUBLISH</Text>
@@ -237,6 +246,13 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     paddingVertical: 10,
     paddingHorizontal: 15,
+  },
+  removeButton: {
+    backgroundColor: "red",
+    borderRadius: 25,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    marginLeft: 10,
   },
   pickButtonText: {
     color: "black",
