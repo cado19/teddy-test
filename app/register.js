@@ -58,7 +58,7 @@ export default function Register() {
     // const ref = firebase.storage.ref.child(`profile_images/${userId}`);
     await uploadBytes(storageRef, blob)
     // await ref.put(blob);
-    return ref.getDownloadURL();
+    // return ref.getDownloadURL();
   };
 
   const signUpUserWithProfilePhoto = async () => {
@@ -81,13 +81,14 @@ export default function Register() {
       // create the user
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user
+      const profile_url = `profile_images/${user.uid}`;
       
       console.log("id: " + user.uid);
       // Select profile photo
       const image = await pickImage();
       if (image) {
         const downloadURL = await uploadImage(image, user.uid);
-        await user.updateProfile({ photoURL: downloadURL });
+        // await user.updateProfile({ photoURL: downloadURL });
       }
 
       const setUpdateRef = doc(firestore, "users", user.uid);
@@ -99,7 +100,7 @@ export default function Register() {
         genderIdentity: genderIdentity,
         sexualOrientation: sexualOrientation,
         location: location,
-        profilePhotoUrl: `profile_images/${user.uid}`,
+        profilePhotoUrl: profile_url,
         // createdAt: firestore.FieldValue.serverTimestamp(),
       });
       setLoading(false);

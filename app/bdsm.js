@@ -9,7 +9,7 @@ export default function Bdsm() {
     <View style={styles.container}>
       <Pressable
         style={styles.button}
-        onPress={() => navigation.navigate("profile")}
+        onPress={() => navigation.navigate("(tabs)")}
       >
         <Text style={styles.buttonText}>ENTER THE UNIVERSE</Text>
       </Pressable>

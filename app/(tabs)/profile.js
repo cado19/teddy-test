@@ -28,9 +28,37 @@ import {
   getDownloadURL,
 } from "firebase/storage";
 import firebaseApp from "../firebaseConfig";
+=======
+import { View, Text, Image, Pressable, StyleSheet } from "react-native";
+import React, { useEffect } from "react";
+import { FontAwesome } from "@expo/vector-icons";
+import { useFonts } from "expo-font";
+import { Itim_400Regular, Inter_400Regular } from "@expo-google-fonts/dev";
+import { useNavigation } from "expo-router";
+import { auth } from "../../firebaseConfig";
+import { onAuthStateChanged } from "firebase/auth";
+
+export default function Profile() {
+
+  const [user, setUser] = useState();
+  const [imageUrl, setImageUrl] = useState();
+
+  const getUser = () => {
+    onAuthStateChanged(auth, (user) => {
+      setUser(user);
+    })
+  }
+  
+  let [fontsLoaded] = useFonts({
+    Itim_400Regular,
+    Inter_400Regular
+  });
 
 export default function Publish() {
   const navigation = useNavigation();
+  useEffect(() => {
+    getUser();
+  },[])
 
   const [text, setText] = useState("");
   const [imageUri, setImageUri] = useState(null);
