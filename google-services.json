@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "612151459670",
+    "project_id": "teddylove-a57b1",
+    "storage_bucket": "teddylove-a57b1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:612151459670:android:164aec44a44a0ecf0260f7",
+        "android_client_info": {
+          "package_name": "com.teddyapp.firebase"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAKS7iUojviZasiEgd9h-auayc8F6zmky8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

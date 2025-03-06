@@ -39,15 +39,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "black",
-    backgroundColor: "green"
+    backgroundColor: "#04674E"
   },
   text: {
     fontSize: 20,
   },
   signUpButton: {
-    backgroundColor: "#0DFF9E",
+    backgroundColor: "#04674E",
     padding: 15,
-    borderRadius: 5,
+    borderRadius: 25,
   },
   signUpButtonText: {
     color: "white",
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   loginButton: {
     backgroundColor: "black",
     padding: 15,
-    borderRadius: 5,
+    borderRadius: 25,
   },
   loginButtonText: {
     color: "white",

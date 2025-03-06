@@ -3,6 +3,26 @@ import { Stack } from 'expo-router'
 import "../global.css";
 import React from 'react'
 
+// import firebase from 'firebase/app';
+// import 'firebase/auth';
+// import 'firebase/database';
+
+// const firebaseConfig = {
+//     apiKey: "AIzaSyAKS7iUojviZasiEgd9h-auayc8F6zmky8",
+//     authDomain: "teddylove-a57b1.firebaseapp.com",
+//     projectId: "teddylove-a57b1",
+//     storageBucket: "teddylove-a57b1.firebasestorage.app",
+//     // messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+//     appId: "1:612151459670:android:164aec44a44a0ecf0260f7",
+//   };
+  
+//   // Initialize Firebase if it's not already initialized
+//   if (!firebase.apps.length) {
+//     firebase.initializeApp(firebaseConfig);
+//   } else {
+//     firebase.app(); // Use the default app
+//   }
+
 export default function RootLayout(){
     return (
         <Stack>
