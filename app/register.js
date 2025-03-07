@@ -4,7 +4,6 @@ import {
   StyleSheet,
   Pressable,
   TextInput,
-  Button,
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
@@ -12,16 +11,13 @@ import React, { useEffect, useState } from "react";
 import { useNavigation } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 
-// import firebase from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { ref, uploadBytes } from "firebase/storage";
-import { app, auth, firestore, storage, firebase } from "../firebaseConfig.js";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { app, auth, firestore, storage } from "../firebaseConfig.js";
 import { doc, setDoc } from "firebase/firestore";
-// import "firebase/firestore";
 
 export default function Register() {
   const navigation = useNavigation();
-  
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,96 +26,97 @@ export default function Register() {
   const [genderIdentity, setGenderIdentity] = useState("");
   const [sexualOrientation, setSexualOrientation] = useState("");
   const [location, setLocation] = useState("");
+  const [interests, setInterests] = useState(""); // New field for matching
   const [profilePhotoUrl, setProfilePhotoUrl] = useState("");
   const [user, setUser] = useState(null);
-  const [image, setImage] = useState(null);
-  const [imageUrl, setImageUrl] = useState(null);
   const [loading, setLoading] = useState(false);
-  // const [createdAt, setEmail] = useState('');
 
+  // Function to pick an image from the library
   const pickImage = async () => {
-    // No permissions request is necessary for launching the image library
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
     });
-
-      // setImage(result.uri);
-      console.log(result.assets[0].uri);
+    if (!result.canceled && result.assets?.length > 0) {
+      console.log("Selected image uri:", result.assets[0].uri);
       return result.assets[0].uri;
+    }
+    return null;
   };
 
+  // Upload image and return download URL
   const uploadImage = async (uri, userId) => {
     const response = await fetch(uri);
     const blob = await response.blob();
-    const storageRef = ref(storage, `profile_images/${userId}`)
-    // const ref = firebase.storage.ref.child(`profile_images/${userId}`);
-    await uploadBytes(storageRef, blob)
-    // await ref.put(blob);
-    // return ref.getDownloadURL();
+    const storageRef = ref(storage, `profile_images/${userId}`);
+    await uploadBytes(storageRef, blob);
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
   };
 
   const signUpUserWithProfilePhoto = async () => {
     setLoading(true);
-    console.log(email);
-    console.log(password);
-    console.log(confirmPassword);
-    if (password != confirmPassword) {
+    console.log("Email:", email);
+    console.log("Password:", password);
+    console.log("Confirm Password:", confirmPassword);
+    if (password !== confirmPassword) {
       alert("Passwords do not match");
       setLoading(false);
       return;
     }
 
-    const uId = '';
-
-    // const auth = getAuth(app);
-    // const storage = getStorage();
-    // const firestore = firebase.firestore();
     try {
-      // create the user
+      // Create the user
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user
-      const profile_url = `profile_images/${user.uid}`;
-      
-      console.log("id: " + user.uid);
-      // Select profile photo
-      const image = await pickImage();
-      if (image) {
-        const downloadURL = await uploadImage(image, user.uid);
-        // await user.updateProfile({ photoURL: downloadURL });
+      const user = userCredential.user;
+      console.log("User id:", user.uid);
+
+      // Pick profile photo and upload it
+      const imageUri = await pickImage();
+      let downloadURL = "";
+      if (imageUri) {
+        downloadURL = await uploadImage(imageUri, user.uid);
       }
 
-      const setUpdateRef = doc(firestore, "users", user.uid);
+      // Create a reference for the user document in Firestore
+      const userDocRef = doc(firestore, "users", user.uid);
+      
+      // Convert interests string into an array (trim and filter out empty strings)
+      const interestsArray = interests
+        .split(",")
+        .map(item => item.trim())
+        .filter(item => item !== "");
 
-      // Add user document to Firestore
-      await setDoc(setUpdateRef, {
+      // Add user document to Firestore with all required fields for matching
+      await setDoc(userDocRef, {
+        uid: user.uid,
         email: user.email,
         role: role,
         genderIdentity: genderIdentity,
         sexualOrientation: sexualOrientation,
         location: location,
-        profilePhotoUrl: profile_url,
-        // createdAt: firestore.FieldValue.serverTimestamp(),
+        interests: interestsArray, // New field used for matching
+        profilePhotoUrl: downloadURL || "", // Use downloaded URL if available
+        // createdAt: serverTimestamp(), // Optionally add a timestamp
       });
       setLoading(false);
       alert("Successfully signed up");
       navigation.navigate("universos");
     } catch (error) {
-      // alert(error);
-      console.log(error);
+      console.log("Registration error:", error);
       setLoading(false);
     }
   };
 
   const logRender = () => {
-    console.log('Rendered');
-  }
+    console.log("Rendered");
+  };
 
   useEffect(() => {
     logRender();
-  }, [user])
+  }, [user]);
 
   return (
     <View style={styles.container}>
@@ -141,14 +138,14 @@ export default function Register() {
         style={styles.input}
         value={confirmPassword}
         onChangeText={setConfirmPassword}
-        placeholder="Confirm password"
+        placeholder="Confirm Password"
         placeholderTextColor="gray"
       />
       <TextInput
         style={styles.input}
         value={role}
         onChangeText={setRole}
-        placeholder="Rol"
+        placeholder="Role"
         placeholderTextColor="gray"
       />
       <TextInput
@@ -170,6 +167,14 @@ export default function Register() {
         value={location}
         onChangeText={setLocation}
         placeholder="Location"
+        placeholderTextColor="gray"
+      />
+      {/* New Interests Input Field */}
+      <TextInput
+        style={styles.input}
+        value={interests}
+        onChangeText={setInterests}
+        placeholder="Interests (comma-separated)"
         placeholderTextColor="gray"
       />
 
@@ -218,11 +223,11 @@ const styles = StyleSheet.create({
   },
   photoBtn: {
     backgroundColor: "white",
-    borderRadius: 50, // This will make the button round
+    borderRadius: 50,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    elevation: 3, // Adds a shadow effect (Android only)
-    shadowColor: "#000", // Adds a shadow effect (iOS only)
+    elevation: 3,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 2,
