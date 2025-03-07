@@ -1,5 +1,14 @@
+// app/Matching.js
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Pressable, Image, ActivityIndicator, Alert } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  Image,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
 import { useNavigation } from "expo-router";
 import { getAuth } from "firebase/auth";
 import {
@@ -14,6 +23,12 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import firebaseApp from "../firebaseConfig";
+
+// For gradient borders
+import { LinearGradient } from "expo-linear-gradient";
+
+// Example icons from @expo/vector-icons or any library you prefer
+import { FontAwesome } from "@expo/vector-icons";
 
 export default function Matching() {
   const navigation = useNavigation();
@@ -31,13 +46,12 @@ export default function Matching() {
       setLoading(false);
       return;
     }
-    // Directly get the user's document using their UID
+    // Fetch current user's doc directly by UID
     const userDocRef = doc(firestore, "users", currentUser.uid);
     getDoc(userDocRef)
       .then((docSnap) => {
         if (docSnap.exists()) {
           const currentUserProfile = docSnap.data();
-          console.log("Current user profile:", currentUserProfile);
           fetchPotentialMatches(currentUserProfile);
         } else {
           setLoading(false);
@@ -65,17 +79,17 @@ export default function Matching() {
       );
     }
 
-    const unsubscribeMatches = onSnapshot(
+    const unsubscribe = onSnapshot(
       matchesQuery,
       (snapshot) => {
         let candidates = [];
         snapshot.forEach((doc) => {
           const data = doc.data();
+          // Exclude the current user
           if (data.uid !== currentUserProfile.uid) {
             candidates.push(data);
           }
         });
-        console.log("Potential matches:", candidates);
         setPotentialMatches(candidates);
         setLoading(false);
       },
@@ -84,7 +98,7 @@ export default function Matching() {
         setLoading(false);
       }
     );
-    return () => unsubscribeMatches();
+    return () => unsubscribe();
   };
 
   const handleNext = () => {
@@ -126,7 +140,7 @@ export default function Matching() {
   if (potentialMatches.length === 0) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.textStyle}>No potential matches found.</Text>
+        <Text style={styles.noMatchesText}>No potential matches found.</Text>
       </View>
     );
   }
@@ -135,89 +149,224 @@ export default function Matching() {
 
   return (
     <View style={styles.container}>
-      {/* Header bar */}
-      <View style={styles.header}>
-        <Image source={require("../../assets/qrimage.png")} style={styles.qrStyle} />
-        <Text style={styles.titleText}>MATCHING</Text>
-        <Image source={require("../../assets/logo.png")} style={styles.logo} />
-        <Pressable style={styles.menuButton} onPress={() => navigation.navigate("desplegable")}>
-          <Image source={require("../../assets/menu.png")} style={styles.menuIcon} />
+      {/* Top Bar */}
+      <View style={styles.topBar}>
+        {/* Left: Popularity */}
+        <Pressable style={styles.popularityButton}>
+          <Text style={styles.topBarText}>POPULARITY</Text>
+        </Pressable>
+
+        {/* Center: Nickname */}
+        <Text style={styles.topBarNickname}>
+          {userToShow.nickname?.toUpperCase() || "NICKNAME"}
+        </Text>
+
+        {/* Right: Menu */}
+        <Pressable
+          style={styles.menuButton}
+          onPress={() => navigation.navigate("desplegable")}
+        >
+          <FontAwesome name="bars" size={24} color="white" />
         </Pressable>
       </View>
 
-      {/* Match Card */}
-      <View style={styles.card}>
-        <Text style={styles.nickname}>{userToShow.nickname || "NICKNAME"}</Text>
-        <Text style={styles.info}>{userToShow.role || "ROLE"}</Text>
-        <Text style={styles.info}>{userToShow.description || "DESCRIPTION"}</Text>
-        {userToShow.photoUrl && (
-          <Image source={{ uri: userToShow.photoUrl }} style={styles.profilePic} />
-        )}
+      {/* Big Card with Gradient Border */}
+      <View style={styles.cardContainer}>
+        <LinearGradient
+          colors={["#72009E", "#0DFF9E"]} // Example teal/purple gradient
+          style={styles.gradientBorder}
+        >
+          <View style={styles.innerCard}>
+            {/* Display user info */}
+            {/* Large black area for user’s photo or profile details */}
+            {userToShow.profilePhotoUrl ? (
+              <Image
+                source={{ uri: userToShow.profilePhotoUrl }}
+                style={styles.profilePic}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.emptyProfilePic}>
+                <Text style={styles.emptyPicText}>No Photo</Text>
+              </View>
+            )}
+            <Text style={styles.userDetails}>
+              {userToShow.role || "ROLE"}{"\n"}
+              {userToShow.description || "DESCRIPTION"}
+            </Text>
+          </View>
+        </LinearGradient>
       </View>
 
-      {/* Bottom buttons */}
-      <View style={styles.buttonRow}>
+      {/* Bottom Controls: NEXT - Heart Icon - MATCH */}
+      <View style={styles.bottomControls}>
+        {/* NEXT Button */}
         <Pressable style={styles.nextButton} onPress={handleNext}>
-          <Text style={styles.buttonText}>NEXT</Text>
+          <FontAwesome name="times" size={28} color="white" />
+          <Text style={styles.controlText}>NEXT</Text>
         </Pressable>
+
+        {/* Heart icon in the center */}
+        <View style={styles.heartContainer}>
+          <FontAwesome name="heart" size={28} color="#0DFF9E" />
+        </View>
+
+        {/* MATCH Button */}
         <Pressable style={styles.matchButton} onPress={handleMatch}>
-          <Text style={styles.buttonText}>MATCH</Text>
+          <FontAwesome name="star" size={28} color="white" />
+          <Text style={styles.controlText}>MATCH</Text>
+        </Pressable>
+      </View>
+
+      {/* Optional Bottom Nav Icons */}
+      <View style={styles.bottomNav}>
+        <Pressable style={styles.navItem}>
+          <FontAwesome name="camera" size={24} color="white" />
+        </Pressable>
+        <Pressable style={styles.navItem}>
+          <FontAwesome name="home" size={24} color="white" />
+        </Pressable>
+        <Pressable style={styles.navItem}>
+          <FontAwesome name="heart" size={24} color="white" />
+        </Pressable>
+        <Pressable style={styles.navItem}>
+          <FontAwesome name="comment" size={24} color="white" />
+        </Pressable>
+        <Pressable style={styles.navItem}>
+          <FontAwesome name="user" size={24} color="white" />
         </Pressable>
       </View>
     </View>
   );
 }
 
+/* STYLES */
 const styles = StyleSheet.create({
   container: {
-    flex: 1, backgroundColor: "black", paddingTop: 40, paddingHorizontal: 10,
+    flex: 1,
+    backgroundColor: "black",
   },
   centered: {
-    flex: 1, backgroundColor: "black", justifyContent: "center", alignItems: "center",
+    flex: 1,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  textStyle: {
-    color: "white", fontSize: 16,
+  noMatchesText: {
+    color: "white",
+    fontSize: 16,
   },
-  header: {
-    flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20,
+  /* Top Bar */
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 50,
+    paddingHorizontal: 20,
   },
-  qrStyle: {
-    width: 50, height: 50,
+  popularityButton: {
+    borderColor: "#0DFF9E",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
-  titleText: {
-    color: "#0DFF9E", fontSize: 24, fontWeight: "bold",
+  topBarText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "bold",
   },
-  logo: {
-    width: 50, height: 50,
+  topBarNickname: {
+    color: "#0DFF9E",
+    fontSize: 20,
+    fontWeight: "bold",
   },
   menuButton: {
-    backgroundColor: "#0DFF9E", padding: 10, borderRadius: 50,
+    backgroundColor: "#29FF9B",
+    borderRadius: 20,
+    padding: 10,
   },
-  menuIcon: {
-    width: 24, height: 24, tintColor: "white",
+  /* Gradient Card */
+  cardContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  card: {
-    backgroundColor: "#1E1E1E", borderRadius: 20, padding: 20, alignItems: "center", marginBottom: 20,
+  gradientBorder: {
+    borderRadius: 20,
+    padding: 4, // space for gradient border
   },
-  nickname: {
-    color: "white", fontSize: 22, fontWeight: "bold", marginBottom: 10,
-  },
-  info: {
-    color: "white", fontSize: 16, marginBottom: 5,
+  innerCard: {
+    backgroundColor: "black",
+    borderRadius: 16,
+    width: 300,
+    height: 400,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 10,
   },
   profilePic: {
-    width: 100, height: 100, borderRadius: 50, marginTop: 10,
+    width: 200,
+    height: 200,
+    borderRadius: 10,
+    marginBottom: 10,
   },
-  buttonRow: {
-    flexDirection: "row", justifyContent: "space-between",
+  emptyProfilePic: {
+    width: 200,
+    height: 200,
+    backgroundColor: "#333",
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+  emptyPicText: {
+    color: "white",
+  },
+  userDetails: {
+    color: "#0DFF9E",
+    textAlign: "center",
+  },
+  /* Bottom Controls */
+  bottomControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-around",
+    marginHorizontal: 40,
+    marginBottom: 10,
   },
   nextButton: {
-    flex: 1, backgroundColor: "purple", padding: 15, borderRadius: 10, marginRight: 5, alignItems: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "purple",
+    padding: 10,
+    borderRadius: 25,
   },
   matchButton: {
-    flex: 1, backgroundColor: "#29FF9B", padding: 15, borderRadius: 10, marginLeft: 5, alignItems: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#72009E",
+    padding: 10,
+    borderRadius: 25,
   },
-  buttonText: {
-    color: "white", fontWeight: "bold",
+  controlText: {
+    color: "white",
+    marginLeft: 8,
+    fontWeight: "bold",
+  },
+  heartContainer: {
+    padding: 10,
+  },
+  /* Bottom Nav Icons */
+  bottomNav: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    backgroundColor: "black",
+    // position: "absolute", bottom: 0, left: 0, right: 0, // If you want it pinned
+  },
+  navItem: {
+    padding: 5,
   },
 });
