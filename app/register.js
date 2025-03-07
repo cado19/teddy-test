@@ -14,7 +14,7 @@ import * as ImagePicker from "expo-image-picker";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { app, auth, firestore, storage } from "../firebaseConfig.js";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 export default function Register() {
   const navigation = useNavigation();
@@ -26,12 +26,10 @@ export default function Register() {
   const [genderIdentity, setGenderIdentity] = useState("");
   const [sexualOrientation, setSexualOrientation] = useState("");
   const [location, setLocation] = useState("");
-  const [interests, setInterests] = useState(""); // New field for matching
-  const [profilePhotoUrl, setProfilePhotoUrl] = useState("");
-  const [user, setUser] = useState(null);
+  const [interests, setInterests] = useState(""); // New interests field (comma-separated)
   const [loading, setLoading] = useState(false);
 
-  // Function to pick an image from the library
+  // Launch the image library and return the selected image URI
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -46,7 +44,7 @@ export default function Register() {
     return null;
   };
 
-  // Upload image and return download URL
+  // Upload image to Firebase Storage and return the download URL
   const uploadImage = async (uri, userId) => {
     const response = await fetch(uri);
     const blob = await response.blob();
@@ -58,9 +56,6 @@ export default function Register() {
 
   const signUpUserWithProfilePhoto = async () => {
     setLoading(true);
-    console.log("Email:", email);
-    console.log("Password:", password);
-    console.log("Confirm Password:", confirmPassword);
     if (password !== confirmPassword) {
       alert("Passwords do not match");
       setLoading(false);
@@ -68,28 +63,23 @@ export default function Register() {
     }
 
     try {
-      // Create the user
+      // Create the user with Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       console.log("User id:", user.uid);
 
-      // Pick profile photo and upload it
-      const imageUri = await pickImage();
+      // Pick and upload profile photo
       let downloadURL = "";
+      const imageUri = await pickImage();
       if (imageUri) {
         downloadURL = await uploadImage(imageUri, user.uid);
       }
 
-      // Create a reference for the user document in Firestore
-      const userDocRef = doc(firestore, "users", user.uid);
-      
-      // Convert interests string into an array (trim and filter out empty strings)
-      const interestsArray = interests
-        .split(",")
-        .map(item => item.trim())
-        .filter(item => item !== "");
+      // Convert interests string into an array (trim and filter out empties)
+      const interestsArray = interests.split(",").map(item => item.trim()).filter(item => item !== "");
 
-      // Add user document to Firestore with all required fields for matching
+      // Save user profile to Firestore with document ID equal to user.uid
+      const userDocRef = doc(firestore, "users", user.uid);
       await setDoc(userDocRef, {
         uid: user.uid,
         email: user.email,
@@ -97,9 +87,9 @@ export default function Register() {
         genderIdentity: genderIdentity,
         sexualOrientation: sexualOrientation,
         location: location,
-        interests: interestsArray, // New field used for matching
-        profilePhotoUrl: downloadURL || "", // Use downloaded URL if available
-        // createdAt: serverTimestamp(), // Optionally add a timestamp
+        interests: interestsArray,
+        profilePhotoUrl: downloadURL || "",
+        createdAt: serverTimestamp(),
       });
       setLoading(false);
       alert("Successfully signed up");
@@ -110,73 +100,16 @@ export default function Register() {
     }
   };
 
-  const logRender = () => {
-    console.log("Rendered");
-  };
-
-  useEffect(() => {
-    logRender();
-  }, [user]);
-
   return (
     <View style={styles.container}>
-      <TextInput
-        style={styles.input}
-        value={email}
-        onChangeText={setEmail}
-        placeholder="Email"
-        placeholderTextColor="gray"
-      />
-      <TextInput
-        style={styles.input}
-        value={password}
-        onChangeText={setPassword}
-        placeholder="Password"
-        placeholderTextColor="gray"
-      />
-      <TextInput
-        style={styles.input}
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-        placeholder="Confirm Password"
-        placeholderTextColor="gray"
-      />
-      <TextInput
-        style={styles.input}
-        value={role}
-        onChangeText={setRole}
-        placeholder="Role"
-        placeholderTextColor="gray"
-      />
-      <TextInput
-        style={styles.input}
-        value={genderIdentity}
-        onChangeText={setGenderIdentity}
-        placeholder="Gender Identity"
-        placeholderTextColor="gray"
-      />
-      <TextInput
-        style={styles.input}
-        value={sexualOrientation}
-        onChangeText={setSexualOrientation}
-        placeholder="Sexual Orientation"
-        placeholderTextColor="gray"
-      />
-      <TextInput
-        style={styles.input}
-        value={location}
-        onChangeText={setLocation}
-        placeholder="Location"
-        placeholderTextColor="gray"
-      />
-      {/* New Interests Input Field */}
-      <TextInput
-        style={styles.input}
-        value={interests}
-        onChangeText={setInterests}
-        placeholder="Interests (comma-separated)"
-        placeholderTextColor="gray"
-      />
+      <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="Email" placeholderTextColor="gray" />
+      <TextInput style={styles.input} value={password} onChangeText={setPassword} placeholder="Password" placeholderTextColor="gray" secureTextEntry />
+      <TextInput style={styles.input} value={confirmPassword} onChangeText={setConfirmPassword} placeholder="Confirm Password" placeholderTextColor="gray" secureTextEntry />
+      <TextInput style={styles.input} value={role} onChangeText={setRole} placeholder="Role" placeholderTextColor="gray" />
+      <TextInput style={styles.input} value={genderIdentity} onChangeText={setGenderIdentity} placeholder="Gender Identity" placeholderTextColor="gray" />
+      <TextInput style={styles.input} value={sexualOrientation} onChangeText={setSexualOrientation} placeholder="Sexual Orientation" placeholderTextColor="gray" />
+      <TextInput style={styles.input} value={location} onChangeText={setLocation} placeholder="Location" placeholderTextColor="gray" />
+      <TextInput style={styles.input} value={interests} onChangeText={setInterests} placeholder="Interests (comma-separated)" placeholderTextColor="gray" />
 
       <TouchableOpacity style={styles.photoBtn} onPress={pickImage}>
         <Text style={styles.btnText}>Photo</Text>
