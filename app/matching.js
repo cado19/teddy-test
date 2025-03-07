@@ -1,17 +1,11 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  Image,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
+import { View, Text, StyleSheet, Pressable, Image, ActivityIndicator, Alert } from "react-native";
 import { useNavigation } from "expo-router";
 import { getAuth } from "firebase/auth";
 import {
   getFirestore,
+  doc,
+  getDoc,
   collection,
   query,
   where,
@@ -37,34 +31,26 @@ export default function Matching() {
       setLoading(false);
       return;
     }
-    // Fetch current user profile from 'users' collection
-    const userQuery = query(
-      collection(firestore, "users"),
-      where("uid", "==", currentUser.uid)
-    );
-    const unsubscribeUser = onSnapshot(
-      userQuery,
-      (snapshot) => {
-        if (!snapshot.empty) {
-          const currentUserProfile = snapshot.docs[0].data();
+    // Directly get the user's document using their UID
+    const userDocRef = doc(firestore, "users", currentUser.uid);
+    getDoc(userDocRef)
+      .then((docSnap) => {
+        if (docSnap.exists()) {
+          const currentUserProfile = docSnap.data();
           console.log("Current user profile:", currentUserProfile);
           fetchPotentialMatches(currentUserProfile);
         } else {
           setLoading(false);
           Alert.alert("Error", "No profile found for current user.");
         }
-      },
-      (error) => {
-        console.error(error);
+      })
+      .catch((error) => {
+        console.error("Error getting user doc:", error);
         setLoading(false);
-      }
-    );
-    return () => unsubscribeUser();
+      });
   }, []);
 
   const fetchPotentialMatches = (currentUserProfile) => {
-    // Example: Filter by location and optionally interests.
-    // If currentUserProfile.interests exists, use it; otherwise, only filter by location.
     let matchesQuery;
     if (currentUserProfile.interests && currentUserProfile.interests.length > 0) {
       matchesQuery = query(
@@ -85,7 +71,6 @@ export default function Matching() {
         let candidates = [];
         snapshot.forEach((doc) => {
           const data = doc.data();
-          // Exclude the current user from potential matches
           if (data.uid !== currentUserProfile.uid) {
             candidates.push(data);
           }
@@ -95,7 +80,7 @@ export default function Matching() {
         setLoading(false);
       },
       (error) => {
-        console.error(error);
+        console.error("Error fetching matches:", error);
         setLoading(false);
       }
     );
@@ -156,10 +141,7 @@ export default function Matching() {
         <Text style={styles.titleText}>MATCHING</Text>
         <Image source={require("../../assets/logo.png")} style={styles.logo} />
         <Pressable style={styles.menuButton} onPress={() => navigation.navigate("desplegable")}>
-          <Image
-            source={require("../../assets/menu.png")} // Use your own menu icon if available
-            style={styles.menuIcon}
-          />
+          <Image source={require("../../assets/menu.png")} style={styles.menuIcon} />
         </Pressable>
       </View>
 
@@ -188,96 +170,54 @@ export default function Matching() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: "black",
-    paddingTop: 40,
-    paddingHorizontal: 10,
+    flex: 1, backgroundColor: "black", paddingTop: 40, paddingHorizontal: 10,
   },
   centered: {
-    flex: 1,
-    backgroundColor: "black",
-    justifyContent: "center",
-    alignItems: "center",
+    flex: 1, backgroundColor: "black", justifyContent: "center", alignItems: "center",
   },
   textStyle: {
-    color: "white",
-    fontSize: 16,
+    color: "white", fontSize: 16,
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20,
   },
   qrStyle: {
-    width: 50,
-    height: 50,
+    width: 50, height: 50,
   },
   titleText: {
-    color: "#0DFF9E",
-    fontSize: 24,
-    fontWeight: "bold",
+    color: "#0DFF9E", fontSize: 24, fontWeight: "bold",
   },
   logo: {
-    width: 50,
-    height: 50,
+    width: 50, height: 50,
   },
   menuButton: {
-    backgroundColor: "#0DFF9E",
-    padding: 10,
-    borderRadius: 50,
+    backgroundColor: "#0DFF9E", padding: 10, borderRadius: 50,
   },
   menuIcon: {
-    width: 24,
-    height: 24,
-    tintColor: "white",
+    width: 24, height: 24, tintColor: "white",
   },
   card: {
-    backgroundColor: "#1E1E1E",
-    borderRadius: 20,
-    padding: 20,
-    alignItems: "center",
-    marginBottom: 20,
+    backgroundColor: "#1E1E1E", borderRadius: 20, padding: 20, alignItems: "center", marginBottom: 20,
   },
   nickname: {
-    color: "white",
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 10,
+    color: "white", fontSize: 22, fontWeight: "bold", marginBottom: 10,
   },
   info: {
-    color: "white",
-    fontSize: 16,
-    marginBottom: 5,
+    color: "white", fontSize: 16, marginBottom: 5,
   },
   profilePic: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginTop: 10,
+    width: 100, height: 100, borderRadius: 50, marginTop: 10,
   },
   buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: "row", justifyContent: "space-between",
   },
   nextButton: {
-    flex: 1,
-    backgroundColor: "purple",
-    padding: 15,
-    borderRadius: 10,
-    marginRight: 5,
-    alignItems: "center",
+    flex: 1, backgroundColor: "purple", padding: 15, borderRadius: 10, marginRight: 5, alignItems: "center",
   },
   matchButton: {
-    flex: 1,
-    backgroundColor: "#29FF9B",
-    padding: 15,
-    borderRadius: 10,
-    marginLeft: 5,
-    alignItems: "center",
+    flex: 1, backgroundColor: "#29FF9B", padding: 15, borderRadius: 10, marginLeft: 5, alignItems: "center",
   },
   buttonText: {
-    color: "white",
-    fontWeight: "bold",
+    color: "white", fontWeight: "bold",
   },
 });
