@@ -5,7 +5,7 @@ import { useNavigation } from "expo-router";
 export default function Bdsm() {
   const navigation = useNavigation();
   return (
-    <ImageBackground source={require("../assets/bdsm.jpg")} style={styles.backgroundImage}>
+    <ImageBackground source={require("../assets/bdsm.png")} style={styles.backgroundImage}>
     <View style={styles.container}>
       <Pressable
         style={styles.button}

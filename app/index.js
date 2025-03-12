@@ -8,12 +8,12 @@ export default function WelcomeScreen() {
     <View style={styles.container}>
       <View style={styles.signUpView}>
         <Pressable style={styles.signUpButton} onPress={() => navigation.navigate("register")}>
-            <Text style={styles.signUpButtonText}>Sign In</Text>
+            <Text style={styles.signUpButtonText}>Sign Up</Text>
         </Pressable>
       </View>
       <View style={styles.loginView}>
         <Pressable style={styles.loginButton} onPress={() => navigation.navigate("login")}>
-            <Text style={styles.loginButtonText}>Sign Up</Text>
+            <Text style={styles.loginButtonText}>Sign In</Text>
         </Pressable>
       </View>
     </View>

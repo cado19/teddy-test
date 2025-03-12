@@ -5,7 +5,7 @@ import { useNavigation } from 'expo-router';
 export default function Ddlg() {
     const navigation = useNavigation();
   return (
-    <ImageBackground source={require("../assets/ddlg.jpg")} style={styles.backgroundImage}>
+    <ImageBackground source={require("../assets/ddlg.png")} style={styles.backgroundImage}>
     <View style={styles.container}>
       <Pressable style={styles.button} onPress={() => navigation.navigate("(tabs)")}>
         <Text style={styles.buttonText}>ENTER THE UNIVERSE</Text>

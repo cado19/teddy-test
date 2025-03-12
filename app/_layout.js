@@ -37,6 +37,7 @@ export default function RootLayout(){
             <Stack.Screen name="vipsubscription" options={{title: 'VipSubcription', headerShown: false}} />
             <Stack.Screen name="commentar" options={{title: 'Commentar', headerShown: false}} />
             <Stack.Screen name="megusta" options={{title: 'MeGusta', headerShown: false}} />
+            <Stack.Screen name="bot" options={{title: 'Bot', headerShown: false}} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false}} />
         </Stack>
     )

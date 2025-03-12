@@ -1,18 +1,62 @@
-import { View, Pressable, Text, StyleSheet } from "react-native";
-import React from "react";
+import { View, Pressable, Text, StyleSheet, ActivityIndicator } from "react-native";
+import React, { useEffect, useState } from "react";
 import { useFonts } from "expo-font";
 import { GochiHand_400Regular } from "@expo-google-fonts/dev";
 import AppLoading from "expo-app-loading";
 import { useNavigation } from "expo-router";
+import { doc, updateDoc } from "firebase/firestore";
+import { auth, firestore } from "../firebaseConfig";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function Universos() {
-    const navigation = useNavigation();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const navigation = useNavigation();
+  // const docRef = doc(firestore, "users", user?.uid);
+
+  if(user){console.log(user)}
+
+  const submitBdsm = async () => {
+    try {
+      const docRef = doc(firestore, "users", user?.uid);
+      await updateDoc(docRef, {fetish: 'bdsm'}, {merge: true});
+      navigation.navigate("bdsm");
+    } catch (error){
+      console.log(error);
+    }
+  }
+
+  const submitDdlg = async () => {
+    try {
+      const docRef = doc(firestore, "users", user?.uid);
+      await updateDoc(docRef, {fetish: 'ddlg'}, {merge: true});
+      navigation.navigate("ddlg");
+    } catch (error){
+      console.log(error);
+    }
+  }
+
+  const getUser = async () => {
+    onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setLoading(false);
+    });
+  }
+
+  useEffect(() => {
+    getUser();
+  }, [])
+
   let [fontsLoaded] = useFonts({
     GochiHand_400Regular,
   });
 
   if (!fontsLoaded) {
-    return <AppLoading />;
+    return <ActivityIndicator size={"large"} color={"#ffffff"} />;
+  }
+
+  if(loading){
+    return <ActivityIndicator size={"large"} color={"#ffffff"} />
   }
 
   return (
@@ -20,13 +64,13 @@ export default function Universos() {
       <View style={styles.buttonContainer}>
         <Pressable
           style={styles.bdsmButton}
-          onPress={() => navigation.navigate("bdsm")}
+          onPress={submitBdsm}
         >
           <Text style={styles.buttonText}>BDSM</Text>
         </Pressable>
         <Pressable
           style={styles.ddlgButton}
-          onPress={() => navigation.navigate("ddlg")}
+          onPress={submitDdlg}
         >
           <Text style={styles.buttonText}>DDLG</Text>
         </Pressable>
@@ -40,7 +84,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#202020"
+    backgroundColor: "#202020",
   },
   buttonContainer: {
     flexDirection: "row",

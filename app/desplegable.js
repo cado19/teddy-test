@@ -34,7 +34,7 @@ export default function Desplagable() {
       {/* div with the links  */}
       <View style={styles.btnContainer}>
         <Pressable style={styles.btnBody}>
-          <Text style={styles.btnText}>Teddy's Bot</Text>
+          <Text style={styles.btnText} onPress={() => navigation.navigate("bot")}>Teddy's Bot</Text>
         </Pressable>
         <Pressable style={styles.addBtnBody} onPress={() => navigation.navigate("addfriend")}>
           <FontAwesome

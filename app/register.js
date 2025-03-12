@@ -4,24 +4,25 @@ import {
   StyleSheet,
   Pressable,
   TextInput,
-  Button,
   TouchableOpacity,
   ActivityIndicator,
+  FlatList,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { useNavigation } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 
-// import firebase from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { ref, uploadBytes } from "firebase/storage";
-import { app, auth, firestore, storage, firebase } from "../firebaseConfig.js";
-import { doc, setDoc } from "firebase/firestore";
-// import "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { app, auth, firestore, storage } from "../firebaseConfig.js";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { ScrollView } from "react-native";
+import { genders, options } from "../components/options.js";
+import Checkbox from "expo-checkbox";
+import { Picker } from "@react-native-picker/picker";
 
 export default function Register() {
   const navigation = useNavigation();
-  
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,161 +31,219 @@ export default function Register() {
   const [genderIdentity, setGenderIdentity] = useState("");
   const [sexualOrientation, setSexualOrientation] = useState("");
   const [location, setLocation] = useState("");
-  const [profilePhotoUrl, setProfilePhotoUrl] = useState("");
-  const [user, setUser] = useState(null);
-  const [image, setImage] = useState(null);
-  const [imageUrl, setImageUrl] = useState(null);
+  const [interests, setInterests] = useState(""); // New interests field (comma-separated)
+  const [practices, setPractices] = useState(""); // New practices field (comma-separated)
+  const [selectedOptions, setSelectedOptions] = useState([]); //options box for kinks
+  const [description, setDescription] = useState("");
+  const [nickName, setNickName] = useState("");
   const [loading, setLoading] = useState(false);
-  // const [createdAt, setEmail] = useState('');
 
+  // Launch the image library and return the selected image URI
   const pickImage = async () => {
-    // No permissions request is necessary for launching the image library
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
     });
-
-      // setImage(result.uri);
-      console.log(result.assets[0].uri);
+    if (!result.canceled && result.assets?.length > 0) {
+      console.log("Selected image uri:", result.assets[0].uri);
       return result.assets[0].uri;
+    }
+    return null;
   };
 
+  // Upload image to Firebase Storage and return the download URL
   const uploadImage = async (uri, userId) => {
     const response = await fetch(uri);
     const blob = await response.blob();
-    const storageRef = ref(storage, `profile_images/${userId}`)
-    // const ref = firebase.storage.ref.child(`profile_images/${userId}`);
-    await uploadBytes(storageRef, blob)
-    // await ref.put(blob);
-    // return ref.getDownloadURL();
+    const storageRef = ref(storage, `profile_images/${userId}`);
+    await uploadBytes(storageRef, blob);
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
   };
+
+  const toggleOption = (option) => {
+    if (selectedOptions.includes(option.label)) {
+      setSelectedOptions(
+        selectedOptions.filter((label) => label !== option.label)
+      );
+    } else {
+      setSelectedOptions([...selectedOptions, option.label]);
+    }
+  };
+
+  const isSelected = (option) => selectedOptions.includes(option.label);
 
   const signUpUserWithProfilePhoto = async () => {
     setLoading(true);
-    console.log(email);
-    console.log(password);
-    console.log(confirmPassword);
-    if (password != confirmPassword) {
+    if (password !== confirmPassword) {
       alert("Passwords do not match");
       setLoading(false);
       return;
     }
 
-    const uId = '';
-
-    // const auth = getAuth(app);
-    // const storage = getStorage();
-    // const firestore = firebase.firestore();
     try {
-      // create the user
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user
-      const profile_url = `profile_images/${user.uid}`;
-      
-      console.log("id: " + user.uid);
-      // Select profile photo
-      const image = await pickImage();
-      if (image) {
-        const downloadURL = await uploadImage(image, user.uid);
-        // await user.updateProfile({ photoURL: downloadURL });
+      // Create the user with Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const user = userCredential.user;
+      console.log("User id:", user.uid);
+
+      // Pick and upload profile photo
+      let downloadURL = "";
+      const imageUri = await pickImage();
+      if (imageUri) {
+        downloadURL = await uploadImage(imageUri, user.uid);
       }
 
-      const setUpdateRef = doc(firestore, "users", user.uid);
+      // Convert interests string into an array (trim and filter out empties)
+      const interestsArray = interests
+        .split(",")
+        .map((item) => item.trim())
+        .filter((item) => item !== "");
 
-      // Add user document to Firestore
-      await setDoc(setUpdateRef, {
+      // Convert practices string into an array (trim and filter out empties)
+      const practicesArray = practices
+        .split(",")
+        .map((item) => item.trim())
+        .filter((item) => item !== "");
+
+      // Save user profile to Firestore with document ID equal to user.uid
+      const userDocRef = doc(firestore, "users", user.uid);
+      await setDoc(userDocRef, {
+        uid: user.uid,
         email: user.email,
         role: role,
         genderIdentity: genderIdentity,
         sexualOrientation: sexualOrientation,
         location: location,
-        profilePhotoUrl: profile_url,
-        // createdAt: firestore.FieldValue.serverTimestamp(),
+        interests: selectedOptions,
+        // interests: practicesArray,
+        nickname: nickName,
+        description: description,
+        profilePhotoUrl: downloadURL || "",
+        createdAt: serverTimestamp(),
       });
       setLoading(false);
       alert("Successfully signed up");
       navigation.navigate("universos");
     } catch (error) {
-      // alert(error);
-      console.log(error);
+      console.log("Registration error:", error);
       setLoading(false);
     }
   };
 
-  const logRender = () => {
-    console.log('Rendered');
-  }
-
-  useEffect(() => {
-    logRender();
-  }, [user])
-
   return (
-    <View style={styles.container}>
-      <TextInput
-        style={styles.input}
-        value={email}
-        onChangeText={setEmail}
-        placeholder="Email"
-        placeholderTextColor="gray"
-      />
-      <TextInput
-        style={styles.input}
-        value={password}
-        onChangeText={setPassword}
-        placeholder="Password"
-        placeholderTextColor="gray"
-      />
-      <TextInput
-        style={styles.input}
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-        placeholder="Confirm password"
-        placeholderTextColor="gray"
-      />
-      <TextInput
-        style={styles.input}
-        value={role}
-        onChangeText={setRole}
-        placeholder="Rol"
-        placeholderTextColor="gray"
-      />
-      <TextInput
-        style={styles.input}
-        value={genderIdentity}
-        onChangeText={setGenderIdentity}
-        placeholder="Gender Identity"
-        placeholderTextColor="gray"
-      />
-      <TextInput
-        style={styles.input}
-        value={sexualOrientation}
-        onChangeText={setSexualOrientation}
-        placeholder="Sexual Orientation"
-        placeholderTextColor="gray"
-      />
-      <TextInput
-        style={styles.input}
-        value={location}
-        onChangeText={setLocation}
-        placeholder="Location"
-        placeholderTextColor="gray"
-      />
+    <ScrollView>
+      <View style={styles.container}>
+        <TextInput
+          style={styles.input}
+          value={nickName}
+          onChangeText={setNickName}
+          placeholder="Nickname"
+          placeholderTextColor="gray"
+        />
+        <TextInput
+          style={styles.input}
+          value={email}
+          onChangeText={setEmail}
+          placeholder="Email"
+          placeholderTextColor="gray"
+        />
+        <TextInput
+          style={styles.input}
+          value={password}
+          onChangeText={setPassword}
+          placeholder="Password"
+          placeholderTextColor="gray"
+          secureTextEntry
+        />
+        <TextInput
+          style={styles.input}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          placeholder="Confirm Password"
+          placeholderTextColor="gray"
+          secureTextEntry
+        />
+        <TextInput
+          style={styles.input}
+          value={role}
+          onChangeText={setRole}
+          placeholder="Role"
+          placeholderTextColor="gray"
+        />
+        {/* <TextInput
+          style={styles.input}
+          value={genderIdentity}
+          onChangeText={setGenderIdentity}
+          placeholder="Gender Identity"
+          placeholderTextColor="gray"
+        /> */}
+        <Picker
+          items={genders}
+          selectedValue={genderIdentity}
+          onValueChange={(value) => setGenderIdentity(value)}
+          // placeholder={{ label: "Select an option...", value: null }}
+          style={{ color: "black", width: "80%", backgroundColor: "white", borderRadius: 25 }}
+        >
+          {genders.map((gender) => (
+            <Picker.Item label={gender.label} value={gender.value} />))}
+        </Picker>
 
-      <TouchableOpacity style={styles.photoBtn} onPress={pickImage}>
-        <Text style={styles.btnText}>Photo</Text>
-      </TouchableOpacity>
+        <TextInput
+          style={styles.input}
+          value={sexualOrientation}
+          onChangeText={setSexualOrientation}
+          placeholder="Sexual Orientation"
+          placeholderTextColor="gray"
+        />
+        <TextInput
+          style={styles.input}
+          value={location}
+          onChangeText={setLocation}
+          placeholder="Location"
+          placeholderTextColor="gray"
+        />
+        {/* <TextInput style={styles.input} value={interests} onChangeText={setInterests} placeholder="Interests (comma-separated)" placeholderTextColor="gray" /> */}
+        <FlatList
+          data={options}
+          renderItem={({ item }) => (
+            <View style={styles.optionContainer}>
+              <Checkbox
+                value={isSelected(item)}
+                onValueChange={() => toggleOption(item)}
+              />
+              <Text style={styles.optionLabel}>{item.label}</Text>
+            </View>
+          )}
+        />
+        {/* <TextInput style={styles.input} value={practices} onChangeText={setPractices} placeholder="Practices (comma-separated)" placeholderTextColor="gray" /> */}
+        <TextInput
+          style={styles.input}
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Description"
+          placeholderTextColor="gray"
+        />
 
-      {loading ? (
-        <ActivityIndicator size={"small"} style={{ margin: 28 }} />
-      ) : (
-        <Pressable style={styles.button} onPress={signUpUserWithProfilePhoto}>
-          <Text style={styles.buttonText}>Submit</Text>
-        </Pressable>
-      )}
-    </View>
+        <TouchableOpacity style={styles.photoBtn} onPress={pickImage}>
+          <Text style={styles.btnText}>Photo</Text>
+        </TouchableOpacity>
+
+        {loading ? (
+          <ActivityIndicator size={"small"} style={{ margin: 28 }} />
+        ) : (
+          <Pressable style={styles.button} onPress={signUpUserWithProfilePhoto}>
+            <Text style={styles.buttonText}>Submit</Text>
+          </Pressable>
+        )}
+      </View>
+    </ScrollView>
   );
 }
 
@@ -218,11 +277,11 @@ const styles = StyleSheet.create({
   },
   photoBtn: {
     backgroundColor: "white",
-    borderRadius: 50, // This will make the button round
+    borderRadius: 50,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    elevation: 3, // Adds a shadow effect (Android only)
-    shadowColor: "#000", // Adds a shadow effect (iOS only)
+    elevation: 3,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 2,
@@ -232,5 +291,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     textAlign: "center",
+  },
+
+  optionContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 5,
+  },
+  optionLabel: {
+    marginLeft: 10,
+    color: "#fff",
   },
 });

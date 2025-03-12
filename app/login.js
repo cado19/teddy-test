@@ -34,22 +34,23 @@ export default function Login() {
         password
       ).then((res) => {
         const user = res.user;
-        console.log(res.user);
+        // console.log(res.user);
         alert("Successfully logged in");
         // alert("Sign in success");
         navigation.navigate("(tabs)");
+        setLoading(false);
       });
     } catch (error) {
       alert(error.code);
       console.log(error.code);
-      // if(error.code === 'auth/wrong-password'){
-      //   alert("Incorrect password. Please try again.");
-      // } else {
-      //   alert("Sign in failed" + error.message);
-      //   console.log(error.message);
-      // }
+      if(error.code === 'auth/wrong-password'){
+        alert("Incorrect password. Please try again.");
+      } else {
+        alert("Sign in failed" + error.message);
+        console.log(error.message);
+      }
     } 
-    setLoading(false);
+    
     
   };
 
